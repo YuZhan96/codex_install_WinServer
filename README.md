@@ -27,6 +27,10 @@ Although this repository is maintained for ChatGPT Codex, the structure can also
 - Checks the installed version before reinstalling
 - Supports forced reinstall
 - Supports download-only mode
+- Supports preview mode with `-PlanOnly`
+- Supports alternate manifests with `-Manifest`
+- Shows download progress for large packages
+- Verifies cached packages with SHA256
 - Closes the running Codex process before installation
 - Uses standard `Add-AppxPackage` and `Remove-AppxPackage` flows
 
@@ -97,6 +101,12 @@ Skips the final "Press Enter to exit" prompt. This is useful for automation.
 
 Sets the Store release ring and download retry count.
 
+```powershell
+.\Codex_Installer.ps1 -Manifest .\config\codex.app.psd1 -PlanOnly
+```
+
+Loads a specific manifest and prints the install plan without changing the system.
+
 ## 📦 Codex App Manifest
 
 Codex-specific values live in `config/codex.app.psd1`:
@@ -124,6 +134,7 @@ This repository is maintained for ChatGPT Codex, but the modular layout makes th
 6. Replace `ProcessName` if the app needs to be closed before updating.
 7. Replace `AppUserModelId` if you want the final launch command to be accurate.
 8. If the target app uses unusual package names, adjust `Select-CodexPackageSet` in `src/CodexInstaller.psm1`.
+9. Launch the installer with `-Manifest .\config\example.app.psd1` so the same code path can target the new app.
 
 Example manifest shape:
 

@@ -27,6 +27,10 @@ https://github.com/YuZhan96/codex_install_WinServer
 - 安装前检查已安装版本
 - 支持强制重装
 - 支持只下载不安装
+- 支持 `-PlanOnly` 预览模式
+- 支持 `-Manifest` 指定其他应用清单
+- 下载大包时显示进度条
+- 使用 SHA256 校验缓存文件
 - 安装前关闭正在运行的 Codex 进程
 - 使用标准 `Add-AppxPackage` 和 `Remove-AppxPackage` 流程
 
@@ -97,6 +101,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 指定 Store 发布通道和下载重试次数。
 
+```powershell
+.\Codex_Installer.ps1 -Manifest .\config\codex.app.psd1 -PlanOnly
+```
+
+加载指定应用清单并仅预览安装计划，不修改系统。
+
 ## 📦 Codex 应用清单
 
 Codex 专用配置位于 `config/codex.app.psd1`：
@@ -124,6 +134,7 @@ Codex 专用配置位于 `config/codex.app.psd1`：
 6. 如果安装或更新前需要关闭目标软件，替换 `ProcessName`。
 7. 如果希望安装完成后显示准确启动命令，替换 `AppUserModelId`。
 8. 如果目标软件包命名比较特殊，调整 `src/CodexInstaller.psm1` 中的 `Select-CodexPackageSet` 逻辑。
+9. 运行安装器时传入 `-Manifest .\config\example.app.psd1`，就能用同一套代码流程指向新软件。
 
 示例应用清单结构：
 

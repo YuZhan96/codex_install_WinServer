@@ -36,6 +36,54 @@ function Ensure-Directory {
     }
 }
 
+function Get-ChecksumPath {
+    param([hashtable] $Context)
+
+    return Join-Path $Context.DownloadDir "checksums.json"
+}
+
+function Read-ChecksumIndex {
+    param([hashtable] $Context)
+
+    $path = Get-ChecksumPath -Context $Context
+    if (!(Test-Path $path)) {
+        return @{}
+    }
+
+    try {
+        $raw = Get-Content -Raw -Path $path
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return @{}
+        }
+
+        $parsed = $raw | ConvertFrom-Json
+        $index = @{}
+        foreach ($property in $parsed.PSObject.Properties) {
+            $index[$property.Name] = [string]$property.Value
+        }
+        return $index
+    }
+    catch {
+        return @{}
+    }
+}
+
+function Write-ChecksumIndex {
+    param(
+        [hashtable] $Context,
+        [hashtable] $Index
+    )
+
+    $path = Get-ChecksumPath -Context $Context
+    $Index | ConvertTo-Json -Depth 6 | Set-Content -Path $path -Encoding utf8
+}
+
+function Get-FileSha256 {
+    param([string] $Path)
+
+    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToUpperInvariant()
+}
+
 function ConvertFrom-HtmlEncodedText {
     param([string] $Text)
 
@@ -150,24 +198,35 @@ function Get-PackageCachePath {
 function Test-PackageCache {
     param(
         $Package,
-        [string] $Path
+        [string] $Path,
+        [hashtable] $ChecksumIndex
     )
 
     if (!(Test-Path $Path)) {
         return $false
     }
 
-    return ((Get-Item $Path).Length -eq $Package.size)
+    if ((Get-Item $Path).Length -ne $Package.size) {
+        return $false
+    }
+
+    $cachedHash = $ChecksumIndex[$Package.name]
+    if ([string]::IsNullOrWhiteSpace($cachedHash)) {
+        return $true
+    }
+
+    return ((Get-FileSha256 -Path $Path) -eq $cachedHash)
 }
 
 function Save-StorePackage {
     param(
         [hashtable] $Context,
-        $Package
+        $Package,
+        [hashtable] $ChecksumIndex
     )
 
     $outputPath = Get-PackageCachePath -Context $Context -Package $Package
-    if (Test-PackageCache -Package $Package -Path $outputPath) {
+    if (Test-PackageCache -Package $Package -Path $outputPath -ChecksumIndex $ChecksumIndex) {
         Write-Host "    [OK] Cached: $($Package.name)" -ForegroundColor Green
         return
     }
@@ -179,10 +238,32 @@ function Save-StorePackage {
             Write-Host "    Downloading: $($Package.name)"
             Write-Host "    Size: $([math]::Round($Package.size / 1MB, 2)) MB, attempt $attempt of $($Context.DownloadRetries)"
 
-            $webClient = New-Object System.Net.WebClient
-            $webClient.DownloadFile($packageUrl, $outputPath)
+            $request = [System.Net.HttpWebRequest]::Create($packageUrl)
+            $response = $request.GetResponse()
+            $stream = $response.GetResponseStream()
+            $fileStream = [System.IO.File]::Open($outputPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            $buffer = New-Object byte[] 81920
+            $totalRead = 0L
 
-            if (!(Test-PackageCache -Package $Package -Path $outputPath)) {
+            try {
+                while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $fileStream.Write($buffer, 0, $read)
+                    $totalRead += $read
+
+                    if ($Package.size -gt 0) {
+                        $percent = [math]::Min([math]::Round(($totalRead / [double]$Package.size) * 100, 0), 100)
+                        Write-Progress -Activity "Downloading $($Package.name)" -Status "$([math]::Round($totalRead / 1MB, 2)) MB / $([math]::Round($Package.size / 1MB, 2)) MB" -PercentComplete $percent
+                    }
+                }
+            }
+            finally {
+                Write-Progress -Activity "Downloading $($Package.name)" -Completed
+                $fileStream.Dispose()
+                $stream.Dispose()
+                $response.Dispose()
+            }
+
+            if (!(Test-PackageCache -Package $Package -Path $outputPath -ChecksumIndex $ChecksumIndex)) {
                 $actualSize = 0
                 if (Test-Path $outputPath) {
                     $actualSize = (Get-Item $outputPath).Length
@@ -191,6 +272,8 @@ function Save-StorePackage {
                 throw "Downloaded file size mismatch. Expected $($Package.size), got $actualSize."
             }
 
+            $ChecksumIndex[$Package.name] = (Get-FileSha256 -Path $outputPath)
+            Write-ChecksumIndex -Context $Context -Index $ChecksumIndex
             Write-Host "    [OK] Downloaded: $($Package.name)" -ForegroundColor Green
             return
         }
@@ -215,9 +298,10 @@ function Save-SelectedPackages {
         $PackageSet
     )
 
+    $checksumIndex = Read-ChecksumIndex -Context $Context
     $orderedPackages = @($PackageSet.Dependencies) + @($PackageSet.MainPackage)
     foreach ($package in $orderedPackages) {
-        Save-StorePackage -Context $Context -Package $package
+        Save-StorePackage -Context $Context -Package $package -ChecksumIndex $checksumIndex
     }
 }
 
@@ -305,6 +389,36 @@ function Write-PackageSetSummary {
     Write-Host "    Dependencies: $($PackageSet.Dependencies.Count)"
 }
 
+function Write-InstallPlan {
+    param(
+        [hashtable] $Context,
+        $PackageSet,
+        $InstalledPackage
+    )
+
+    Write-Host ""
+    Write-Host "Plan:" -ForegroundColor Cyan
+    Write-Host "  App: $($Context.App.Name)"
+    Write-Host "  Architecture: $(Resolve-StoreArchitecture)"
+    Write-Host "  Manifest: $($Context.ManifestPath)"
+    Write-Host "  Download cache: $($Context.DownloadDir)"
+    Write-Host "  Main package: $($PackageSet.MainPackage.name)"
+    Write-Host "  Dependencies: $($PackageSet.Dependencies.Count)"
+
+    if ($InstalledPackage) {
+        Write-Host "  Installed version: $($InstalledPackage.Version)"
+    }
+
+    Write-Host "  Actions:"
+    Write-Host "    1. Query Store package metadata"
+    Write-Host "    2. Select matching packages"
+    Write-Host "    3. Download or reuse cached packages"
+    Write-Host "    4. Close running app process if needed"
+    Write-Host "    5. Remove installed version if present"
+    Write-Host "    6. Install dependencies"
+    Write-Host "    7. Install main package"
+}
+
 function Write-InstalledPackageSummary {
     param([hashtable] $Context)
 
@@ -337,6 +451,9 @@ function Start-CodexOfflineInstall {
         [hashtable] $AppManifest,
 
         [Parameter(Mandatory = $true)]
+        [string] $ManifestPath,
+
+        [Parameter(Mandatory = $true)]
         [string] $DownloadDir,
 
         [Parameter(Mandatory = $true)]
@@ -349,16 +466,20 @@ function Start-CodexOfflineInstall {
 
         [switch] $DownloadOnly,
 
+        [switch] $PlanOnly,
+
         [switch] $NoPause
     )
 
     $context = @{
         App             = $AppManifest
+        ManifestPath    = $ManifestPath
         DownloadDir     = $DownloadDir
         Ring            = $Ring
         DownloadRetries = [math]::Max($DownloadRetries, 1)
         Force           = [bool]$Force
         DownloadOnly    = [bool]$DownloadOnly
+        PlanOnly        = [bool]$PlanOnly
         NoPause         = [bool]$NoPause
     }
 
@@ -388,6 +509,12 @@ function Start-CodexOfflineInstall {
     if ($installedPackage -and !$Force -and ([version]$installedPackage.Version -eq $latestVersion)) {
         Write-Host ""
         Write-Host "    [OK] ChatGPT Codex is already up to date. Use -Force to reinstall." -ForegroundColor Green
+        return
+    }
+
+    if ($PlanOnly) {
+        Write-InstallerSection -Index 3 -Total 4 -Message "Previewing install plan"
+        Write-InstallPlan -Context $context -PackageSet $packageSet -InstalledPackage $installedPackage
         return
     }
 
