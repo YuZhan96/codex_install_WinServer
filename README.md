@@ -2,13 +2,13 @@
 
 [中文文档](README.zh.md)
 
-Offline installer for the ChatGPT Codex desktop app on Windows environments where Microsoft Store is unavailable or impractical, especially Windows Server, stripped-down Windows images, and restricted enterprise machines.
+🚀 Offline installer for the ChatGPT Codex desktop app on Windows environments where Microsoft Store is unavailable or impractical, especially Windows Server, stripped-down Windows images, and restricted enterprise machines.
 
 Repository:
 
 https://github.com/YuZhan96/codex_install_WinServer
 
-## Purpose
+## 🎯 Purpose
 
 This project focuses on installing the ChatGPT Codex desktop app on Windows Server. It does not redistribute, modify, crack, or repackage the Codex app itself. The installer resolves Microsoft Store package metadata, selects the matching Codex MSIX package and dependencies for the current CPU architecture, then installs them through the native Windows Appx/MSIX tooling.
 
@@ -16,7 +16,7 @@ The code is written in English for easier maintenance and review. A Chinese READ
 
 Although this repository is maintained for ChatGPT Codex, the structure can also be used as a template for other Microsoft Store / MSIX apps. To adapt it, replace the app manifest, package matching rules, process name, launch entry, and dependency selection logic as needed.
 
-## Features
+## ✨ Features
 
 - Detects x64, x86, and ARM64 Windows architectures
 - Queries Microsoft Store package metadata for ChatGPT Codex
@@ -30,7 +30,24 @@ Although this repository is maintained for ChatGPT Codex, the structure can also
 - Closes the running Codex process before installation
 - Uses standard `Add-AppxPackage` and `Remove-AppxPackage` flows
 
-## Requirements
+## 🧩 Project Structure
+
+```text
+codex_install_WinServer/
+|-- Codex_Installer.ps1       # Thin entry script
+|-- config/
+|   `-- codex.app.psd1        # Codex-specific app manifest
+|-- src/
+|   `-- CodexInstaller.psm1   # Installer workflow module
+|-- README.md                 # English documentation
+|-- README.zh.md              # Chinese documentation
+|-- LICENSE
+`-- winget/                   # Dependency metadata and auxiliary files
+```
+
+Downloaded package files are cached in `downloads/` by default. This directory is ignored by Git; large installer packages should not be committed to the repository.
+
+## ✅ Requirements
 
 - Windows 10 17763 or later
 - Windows 11
@@ -38,7 +55,7 @@ Although this repository is maintained for ChatGPT Codex, the structure can also
 - PowerShell 5.1 or later
 - Administrator privileges
 
-## Quick Start
+## ⚡ Quick Start
 
 Open PowerShell as Administrator, enter the project directory, then run:
 
@@ -54,7 +71,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 Then run the installer again.
 
-## Options
+## 🛠️ Options
 
 ```powershell
 .\Codex_Installer.ps1 -DownloadOnly
@@ -80,24 +97,7 @@ Skips the final "Press Enter to exit" prompt. This is useful for automation.
 
 Sets the Store release ring and download retry count.
 
-## Project Structure
-
-```text
-codex_install_WinServer/
-├── Codex_Installer.ps1       # Thin entry script
-├── config/
-│   └── codex.app.psd1        # Codex-specific app manifest
-├── src/
-│   └── CodexInstaller.psm1   # Installer workflow module
-├── README.md                 # English documentation
-├── README.zh.md              # Chinese documentation
-├── LICENSE
-└── winget/                   # Dependency metadata and auxiliary files
-```
-
-Downloaded package files are cached in `downloads/` by default. This directory is ignored by Git; large installer packages should not be committed to the repository.
-
-## Codex App Manifest
+## 📦 Codex App Manifest
 
 Codex-specific values live in `config/codex.app.psd1`:
 
@@ -112,20 +112,36 @@ Codex-specific values live in `config/codex.app.psd1`:
 
 Most users do not need to edit these values.
 
-## Adapting To Other Apps
+## 🔁 Adapting The Idea To Other Apps
 
-This repository is maintained for ChatGPT Codex. If you want to adapt the structure for another Microsoft Store / MSIX app, review these replacement points:
+This repository is maintained for ChatGPT Codex, but the modular layout makes the idea reusable. A practical migration usually looks like this:
 
-- Change `StoreUrl`
-- Change `PackageName` and `PackageNamePrefix`
-- Adjust main package selection rules if the target app uses a different naming pattern
-- Change `ProcessName`
-- Change `AppUserModelId`
-- Adjust dependency filtering if the target app has special package requirements
+1. Find the target app page on Microsoft Store and copy its URL.
+2. Copy `config/codex.app.psd1` to a new manifest file, for example `config/example.app.psd1`.
+3. Replace `StoreUrl` with the target Store URL.
+4. Replace `PackageName` with the target app package name shown by `Get-AppxPackage`.
+5. Replace `PackageNamePrefix` with the filename prefix used by the Store package list.
+6. Replace `ProcessName` if the app needs to be closed before updating.
+7. Replace `AppUserModelId` if you want the final launch command to be accurate.
+8. If the target app uses unusual package names, adjust `Select-CodexPackageSet` in `src/CodexInstaller.psm1`.
 
-Package naming, dependencies, architecture markers, and launch entries vary between apps. Confirm the target package list before adapting the installer.
+Example manifest shape:
 
-## Notes
+```powershell
+@{
+    Name              = "Example Store App"
+    PackageName       = "Vendor.ExampleApp"
+    PackageNamePrefix = "Vendor.ExampleApp_"
+    ProcessName       = "ExampleApp"
+    StoreUrl          = "https://apps.microsoft.com/detail/EXAMPLEID"
+    PackageApiUrl     = "https://store.uihtm.com/api/packages"
+    AppUserModelId    = "Vendor.ExampleApp_abc123!App"
+}
+```
+
+After creating a new manifest, the entry script can be adjusted to load that manifest instead of `config/codex.app.psd1`. Package naming, dependencies, architecture markers, and launch entries vary between apps, so confirm the target package list before adapting the installer.
+
+## ⚠️ Notes
 
 - This project is not affiliated with OpenAI or Microsoft
 - ChatGPT Codex belongs to its respective rights holder
@@ -133,6 +149,6 @@ Package naming, dependencies, architecture markers, and launch entries vary betw
 - Download URLs may expire; rerun the script to resolve fresh URLs
 - Windows 7 is not supported because it does not support the required MSIX install flow
 
-## License
+## 📄 License
 
 MIT License
