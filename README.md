@@ -1,130 +1,138 @@
 # codex_install_WinServer
 
-用于在没有 Microsoft Store 的 Windows 环境中安装 ChatGPT Codex 桌面版的离线安装工具，主要面向 Windows Server、精简系统、受限企业环境等场景。
+[中文文档](README.zh.md)
 
-远程仓库：
+Offline installer for the ChatGPT Codex desktop app on Windows environments where Microsoft Store is unavailable or impractical, especially Windows Server, stripped-down Windows images, and restricted enterprise machines.
+
+Repository:
 
 https://github.com/YuZhan96/codex_install_WinServer
 
-## 项目定位
+## Purpose
 
-本项目专注于 ChatGPT Codex 桌面版在 Windows Server 环境中的安装，不重新分发、修改或破解应用本体。脚本会通过 Microsoft Store 包信息获取当前系统架构对应的 Codex 主包与依赖包，再调用 Windows 原生 Appx/MSIX 安装能力完成安装。
+This project focuses on installing the ChatGPT Codex desktop app on Windows Server. It does not redistribute, modify, crack, or repackage the Codex app itself. The installer resolves Microsoft Store package metadata, selects the matching Codex MSIX package and dependencies for the current CPU architecture, then installs them through the native Windows Appx/MSIX tooling.
 
-代码本身保持英文，便于维护、审查和继续扩展；项目文档保留中文，方便中文用户快速使用。
+The code is written in English for easier maintenance and review. A Chinese README is provided separately for Chinese users.
 
-同时，本项目也可以作为其他 Microsoft Store / MSIX 软件的安装模板。若要适配其他软件，需要替换 Store 链接、包名规则、进程名、启动入口和依赖筛选逻辑。
+Although this repository is maintained for ChatGPT Codex, the structure can also be used as a template for other Microsoft Store / MSIX apps. To adapt it, replace the app manifest, package matching rules, process name, launch entry, and dependency selection logic as needed.
 
-## 主要能力
+## Features
 
-- 自动识别 x64、x86、ARM64 系统架构
-- 按 Microsoft Store 包信息筛选 Codex 主包
-- 自动识别并下载当前架构所需依赖
-- 校验下载缓存文件大小，避免使用损坏包
-- 支持下载重试
-- 检查已安装版本，避免重复安装
-- 支持强制重装
-- 支持只下载不安装
-- 安装前自动关闭正在运行的 Codex 进程
-- 使用标准 `Add-AppxPackage` / `Remove-AppxPackage` 流程安装和更新
+- Detects x64, x86, and ARM64 Windows architectures
+- Queries Microsoft Store package metadata for ChatGPT Codex
+- Selects the matching main package for the current architecture
+- Downloads architecture-compatible dependencies
+- Validates cached package size before reuse
+- Retries failed downloads
+- Checks the installed version before reinstalling
+- Supports forced reinstall
+- Supports download-only mode
+- Closes the running Codex process before installation
+- Uses standard `Add-AppxPackage` and `Remove-AppxPackage` flows
 
-## 系统要求
+## Requirements
 
-- Windows 10 17763 及以上
+- Windows 10 17763 or later
 - Windows 11
-- Windows Server 2019 及以上
-- PowerShell 5.1 或更高版本
-- 管理员权限
+- Windows Server 2019 or later
+- PowerShell 5.1 or later
+- Administrator privileges
 
-## 快速使用
+## Quick Start
 
-以管理员身份打开 PowerShell，进入项目目录后运行：
+Open PowerShell as Administrator, enter the project directory, then run:
 
 ```powershell
 .\Codex_Installer.ps1
 ```
 
-如果系统阻止脚本执行，可以先在当前 PowerShell 会话中运行：
+If script execution is blocked, run this in the current PowerShell session first:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-然后再次执行安装脚本。
+Then run the installer again.
 
-## 常用参数
+## Options
 
 ```powershell
 .\Codex_Installer.ps1 -DownloadOnly
 ```
 
-只下载 Codex 主包和依赖包，不执行安装。
+Downloads the Codex main package and dependencies without installing them.
 
 ```powershell
 .\Codex_Installer.ps1 -Force
 ```
 
-即使当前已经是最新版本，也重新下载安装流程。
+Runs the install flow even if the installed version already matches the latest resolved package.
 
 ```powershell
 .\Codex_Installer.ps1 -NoPause
 ```
 
-脚本结束时不等待用户按回车，适合自动化环境。
+Skips the final "Press Enter to exit" prompt. This is useful for automation.
 
 ```powershell
 .\Codex_Installer.ps1 -Ring Retail -DownloadRetries 5
 ```
 
-指定发布通道与下载重试次数。
+Sets the Store release ring and download retry count.
 
-## 文件说明
+## Project Structure
 
 ```text
 codex_install_WinServer/
-├── Codex_Installer.ps1    # 主安装脚本
-├── README.md              # 中文说明文档
-├── LICENSE                # 开源许可证
-└── winget/                # 依赖包信息与辅助文件
+├── Codex_Installer.ps1       # Thin entry script
+├── config/
+│   └── codex.app.psd1        # Codex-specific app manifest
+├── src/
+│   └── CodexInstaller.psm1   # Installer workflow module
+├── README.md                 # English documentation
+├── README.zh.md              # Chinese documentation
+├── LICENSE
+└── winget/                   # Dependency metadata and auxiliary files
 ```
 
-下载文件默认保存在脚本同目录下的 `downloads/` 文件夹。该目录已经被 Git 忽略，不建议把大型安装包提交到仓库。
+Downloaded package files are cached in `downloads/` by default. This directory is ignored by Git; large installer packages should not be committed to the repository.
 
-## 脚本配置
+## Codex App Manifest
 
-脚本顶部保留了 Codex 专用配置：
+Codex-specific values live in `config/codex.app.psd1`:
 
-| 配置 | 当前值 | 说明 |
+| Key | Current value | Description |
 | --- | --- | --- |
-| `PackageName` | `OpenAI.Codex` | Windows 应用包名 |
-| `PackageNamePrefix` | `OpenAI.Codex_` | Store 包文件名前缀 |
-| `ProcessName` | `OpenAI.Codex` | 安装前需要关闭的进程名 |
-| `StoreUrl` | Codex 的 Microsoft Store 链接 | 目标应用商店页面 |
-| `PackageApiUrl` | Store 包信息接口 | 用于获取离线包列表 |
-| `AppUserModelId` | Codex 启动入口 | 安装完成后的启动命令 |
+| `PackageName` | `OpenAI.Codex` | Windows app package name |
+| `PackageNamePrefix` | `OpenAI.Codex_` | Store package file prefix |
+| `ProcessName` | `OpenAI.Codex` | Process to close before installation |
+| `StoreUrl` | Codex Microsoft Store URL | Target Store page |
+| `PackageApiUrl` | Store package metadata endpoint | Used to resolve offline packages |
+| `AppUserModelId` | Codex app launch entry | Used in the final launch command |
 
-普通用户无需修改这些配置。
+Most users do not need to edit these values.
 
-## 适配其他软件
+## Adapting To Other Apps
 
-本仓库默认只维护 ChatGPT Codex 安装逻辑。如果想基于此项目安装其他 Microsoft Store / MSIX 软件，可以参考以下替换点：
+This repository is maintained for ChatGPT Codex. If you want to adapt the structure for another Microsoft Store / MSIX app, review these replacement points:
 
-- 将 `StoreUrl` 改为目标软件的 Microsoft Store 链接
-- 修改 `PackageName` 和 `PackageNamePrefix`
-- 修改主包筛选规则
-- 修改 `ProcessName`
-- 修改 `AppUserModelId`
-- 根据目标软件依赖情况调整依赖包筛选逻辑
+- Change `StoreUrl`
+- Change `PackageName` and `PackageNamePrefix`
+- Adjust main package selection rules if the target app uses a different naming pattern
+- Change `ProcessName`
+- Change `AppUserModelId`
+- Adjust dependency filtering if the target app has special package requirements
 
-不同软件的包命名、依赖关系、架构标记和启动入口可能不同。适配前建议先确认目标软件的包列表。
+Package naming, dependencies, architecture markers, and launch entries vary between apps. Confirm the target package list before adapting the installer.
 
-## 注意事项
+## Notes
 
-- 本项目不隶属于 OpenAI 或 Microsoft
-- ChatGPT Codex 的版权归其权利方所有
-- 本项目不提供、修改或破解 Codex 应用本体
-- 下载链接可能具有时效性，过期后重新运行脚本即可重新获取
-- Windows 7 不支持 MSIX 安装流程，因此不在支持范围内
+- This project is not affiliated with OpenAI or Microsoft
+- ChatGPT Codex belongs to its respective rights holder
+- This project does not provide or modify the Codex app itself
+- Download URLs may expire; rerun the script to resolve fresh URLs
+- Windows 7 is not supported because it does not support the required MSIX install flow
 
-## 许可证
+## License
 
 MIT License
