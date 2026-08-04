@@ -1,0 +1,32 @@
+﻿[
+    {
+        "Priority":  1,
+        "Path":  "C:\\Users\\Administrator\\Downloads\\ChatGPT-Installer-main\\winget\\VCLibs.140.x64.appx",
+        "Url":  "http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/c452d4ef-2486-4efe-9c99-36b3d23e0160?P1=1785748938\u0026P2=404\u0026P3=2\u0026P4=NkGvuNMno0SODA38YqwLde%2fAifX%2bAiVXa7uDL4HDLdYPCa%2bfwyXlKpbVNYpVTNMpemJBvYzG3gHoYYLTZq8xaA%3d%3d",
+        "Name":  "VCLibs.140"
+    },
+    {
+        "Priority":  2,
+        "Path":  "C:\\Users\\Administrator\\Downloads\\ChatGPT-Installer-main\\winget\\VCLibs.140.UWPDesktop.x64.appx",
+        "Url":  "http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/27ca12bc-f81d-45ff-95d0-12ad79f15735?P1=1785749075\u0026P2=404\u0026P3=2\u0026P4=H%2fUSPAwEfr5sNAKemojXCDdZ2G1y9L6PV55pRJpT0TQ3MDU8EpMVmwVCkBSue96NNR4mIVHcSN0ZE%2fzfOK4Ydg%3d%3d",
+        "Name":  "VCLibs.140.UWPDesktop"
+    },
+    {
+        "Priority":  3,
+        "Path":  "C:\\Users\\Administrator\\Downloads\\ChatGPT-Installer-main\\winget\\UI.Xaml.2.8.x64.appx",
+        "Url":  "http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/baf6388f-cf6b-4980-a220-0f1cc8c2f857?P1=1785749035\u0026P2=404\u0026P3=2\u0026P4=KnrIaNQ3cPi5FfXSu1xJ73LKQEzi%2bUCCVw3IEWXqJOaBuGbvpwze2F85MG8IFO%2bzR1Lk4YC9n7g1M5sG7HAhIg%3d%3d",
+        "Name":  "UI.Xaml.2.8"
+    },
+    {
+        "Priority":  4,
+        "Path":  "C:\\Users\\Administrator\\Downloads\\ChatGPT-Installer-main\\winget\\WindowsAppRuntime.1.8.x64.msix",
+        "Url":  "http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/3cbf0d18-5aeb-4798-9526-faae52adf62a?P1=1785749775\u0026P2=404\u0026P3=2\u0026P4=PafupHh%2bc6qGHeBkH2MavoDt5CMsMwdDbdtXiKaECzB9QDKRRVnJM9j9IqCsPi5tBK73a8yBibPWAsyPhJhgzg%3d%3d",
+        "Name":  "WindowsAppRuntime.1.8"
+    },
+    {
+        "Priority":  10,
+        "Path":  "C:\\Users\\Administrator\\Downloads\\ChatGPT-Installer-main\\winget\\DesktopAppInstaller.msixbundle",
+        "Url":  "http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/f1337855-68c2-4367-9fa5-886ebd5dfcae?P1=1785753075\u0026P2=404\u0026P3=2\u0026P4=JenZyhOeuw0wjpmBugOZo5mptXYES8uWpjSu%2bmpkER9%2b1Yt51K6MATS4j7qNaOxLzLM7PDHkcAFolori4Zvyhw%3d%3d",
+        "Name":  "DesktopAppInstaller"
+    }
+]

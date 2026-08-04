@@ -1,0 +1,21 @@
+# Downloaded installer packages
+downloads/
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.zip
+
+# Logs and temporary files
+*.log
+*.txt
+*.tmp
+temp/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PowerShell metadata
+*.ps1.xml
