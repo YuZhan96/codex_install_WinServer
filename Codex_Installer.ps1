@@ -21,6 +21,8 @@ param(
 
     [switch] $DownloadOnly,
 
+    [switch] $InstallOnly,
+
     [switch] $PlanOnly,
 
     [switch] $NoPause
@@ -31,6 +33,10 @@ $ProgressPreference = "SilentlyContinue"
 
 $modulePath = Join-Path $PSScriptRoot "src\CodexInstaller.psm1"
 $manifestPath = $Manifest
+
+if ($DownloadOnly -and $InstallOnly) {
+    throw "Use either -DownloadOnly or -InstallOnly, not both."
+}
 
 if (!(Test-Path $manifestPath)) {
     throw "Manifest file not found: $manifestPath"
@@ -48,6 +54,7 @@ try {
         -DownloadRetries $DownloadRetries `
         -Force:$Force `
         -DownloadOnly:$DownloadOnly `
+        -InstallOnly:$InstallOnly `
         -PlanOnly:$PlanOnly `
         -NoPause:$NoPause
 }

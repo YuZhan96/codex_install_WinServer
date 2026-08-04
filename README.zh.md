@@ -27,10 +27,12 @@ https://github.com/YuZhan96/codex_install_WinServer
 - 安装前检查已安装版本
 - 支持强制重装
 - 支持只下载不安装
+- 支持基于已验证缓存的只安装模式
 - 支持 `-PlanOnly` 预览模式
 - 支持 `-Manifest` 指定其他应用清单
 - 下载大包时显示进度条
 - 使用 SHA256 校验缓存文件
+- 生成可重复使用的离线安装清单
 - 安装前关闭正在运行的 Codex 进程
 - 使用标准 `Add-AppxPackage` 和 `Remove-AppxPackage` 流程
 
@@ -83,6 +85,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 只下载 Codex 主包和依赖包，不执行安装。
 
+成功后会生成 `downloads/install-manifest.json` 和 `downloads/checksums.json`，供下一步使用。
+
+```powershell
+.\Codex_Installer.ps1 -InstallOnly
+```
+
+只使用之前下载的本地缓存进行安装。此模式不会访问网络，会在安装前校验每个包的文件大小和 SHA256。
+
 ```powershell
 .\Codex_Installer.ps1 -Force
 ```
@@ -106,6 +116,20 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 加载指定应用清单并仅预览安装计划，不修改系统。
+
+### 下载后再安装
+
+对于网络受限的服务器，可以分两步执行：
+
+```powershell
+# 第一步：解析并下载安装包
+.\Codex_Installer.ps1 -DownloadOnly -NoPause
+
+# 第二步：验证本地缓存并安装
+.\Codex_Installer.ps1 -InstallOnly -NoPause
+```
+
+只有下载阶段成功结束后，`-InstallOnly` 才能运行。不要删除 `downloads/` 下的 `install-manifest.json`、`checksums.json` 或任何安装包文件。
 
 ## 📦 Codex 应用清单
 

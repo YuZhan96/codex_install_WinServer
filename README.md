@@ -27,10 +27,12 @@ Although this repository is maintained for ChatGPT Codex, the structure can also
 - Checks the installed version before reinstalling
 - Supports forced reinstall
 - Supports download-only mode
+- Supports install-only mode from a verified local cache
 - Supports preview mode with `-PlanOnly`
 - Supports alternate manifests with `-Manifest`
 - Shows download progress for large packages
 - Verifies cached packages with SHA256
+- Writes an install manifest for repeatable offline installation
 - Closes the running Codex process before installation
 - Uses standard `Add-AppxPackage` and `Remove-AppxPackage` flows
 
@@ -50,6 +52,11 @@ codex_install_WinServer/
 ```
 
 Downloaded package files are cached in `downloads/` by default. This directory is ignored by Git; large installer packages should not be committed to the repository.
+
+The cache also contains:
+
+- `install-manifest.json`: the selected main package, dependencies, architecture, and release ring
+- `checksums.json`: SHA256 and size records for each downloaded package
 
 ## ✅ Requirements
 
@@ -83,6 +90,14 @@ Then run the installer again.
 
 Downloads the Codex main package and dependencies without installing them.
 
+A verified `downloads/install-manifest.json` and `downloads/checksums.json` are written for the next step.
+
+```powershell
+.\Codex_Installer.ps1 -InstallOnly
+```
+
+Installs only from the previously downloaded cache. This mode does not query the network; it validates every package size and SHA256 value before installing.
+
 ```powershell
 .\Codex_Installer.ps1 -Force
 ```
@@ -106,6 +121,20 @@ Sets the Store release ring and download retry count.
 ```
 
 Loads a specific manifest and prints the install plan without changing the system.
+
+### Download Then Install
+
+For a two-stage workflow on a server with restricted network access:
+
+```powershell
+# Stage 1: resolve and download packages
+.\Codex_Installer.ps1 -DownloadOnly -NoPause
+
+# Stage 2: verify the local cache and install
+.\Codex_Installer.ps1 -InstallOnly -NoPause
+```
+
+The download stage must finish successfully before `-InstallOnly` can run. Do not delete `install-manifest.json`, `checksums.json`, or any package file from `downloads/`.
 
 ## 📦 Codex App Manifest
 
